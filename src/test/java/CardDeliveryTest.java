@@ -26,7 +26,6 @@ class CardDeliveryTest {
         $("[data-test-id=phone] input").setValue("+79998887766");
         $("[data-test-id=agreement]").click();
         $$("button").find(exactText("Забронировать")).click();
-
         $("[data-test-id=notification]").shouldHave(matchText("Успешно!"), Duration.ofSeconds(15));
     }
 }
