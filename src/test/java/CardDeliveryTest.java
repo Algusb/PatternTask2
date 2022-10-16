@@ -1,11 +1,8 @@
-import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.*;
 
@@ -14,7 +11,6 @@ class CardDeliveryTest {
     String generateDate(int days) {
         return LocalDate.now().plusDays(days).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
-
     @Test
     void shouldFillOutForm() {
         String date = generateDate(3);
