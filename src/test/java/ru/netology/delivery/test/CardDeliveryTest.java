@@ -1,49 +1,75 @@
 package ru.netology.delivery.test;
+import com.codeborne.selenide.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.Keys;
-import ru.netology.delivery.data.DataGenerator;
-
-import java.time.Duration;
-
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.*;
+import static ru.netology.delivery.data.DataGenerator.Registration.getRegisteredUser;
+import static ru.netology.delivery.data.DataGenerator.Registration.getUser;
+import static ru.netology.delivery.data.DataGenerator.getRandomLogin;
+import static ru.netology.delivery.data.DataGenerator.getRandomPassword;
 
 class CardDeliveryTest {
 
     @BeforeEach
     void setUpAll() {
-        open("http://localhost:7777/");
+        open("http://localhost:9999/");
     }
 
     @Test
-    @DisplayName("Should successful plan and replan meeting")
-    void shouldSuccessfulPlanAndReplanMeeting() {
-        DataGenerator.UserInfo validUser = DataGenerator.Registration.generateUser("ru");
-        int daysToAddForFirstMeeting = 4;
-        String firstMeetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
-        int daysToAddForSecondMeeting = 7;
-        String secondMeetingDate = DataGenerator.generateDate(daysToAddForSecondMeeting);
-        $("[data-test-id=city] input").setValue(validUser.getCity());
-        $("[data-test-id='date'] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.BACK_SPACE);
-        $("[data-test-id=date] input").setValue(firstMeetingDate);
-        $("[data-test-id=name] input").setValue(validUser.getName());
-        $("[data-test-id=phone] input").setValue(validUser.getPhone());
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Запланировать")).click();
-        $("[data-test-id=success-notification]")
-                .shouldHave(matchText("Успешно!")).shouldBe(visible);
-        $("[data-test-id=success-notification]")
-                .shouldHave(matchText("Встреча успешно запланирована на " + firstMeetingDate),
-                        Duration.ofSeconds(15));
-        $("[data-test-id='date'] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.BACK_SPACE);
-        $("[data-test-id=date] input").setValue(secondMeetingDate);
-        $$("button").find(exactText("Запланировать")).click();
-        $("[data-test-id=replan-notification]")
-                .shouldHave(text("У вас уже запланирована встреча на другую дату. Перепланировать?"));
-        $("[data-test-id=replan-notification] button").click();
-        $("[data-test-id=success-notification]")
-                .shouldHave(matchText("Встреча успешно запланирована на " + secondMeetingDate));
+    @DisplayName("Should successfully login with active registered user")
+    void shouldSuccessfulLoginRegisteredActiveUser() {
+        var registeredUser = getRegisteredUser("active");
+        $("[data-test-id='login'] input").setValue(registeredUser.getLogin());
+        $("[data-test-id='password'] input").setValue(registeredUser.getPassword());
+        $("button.button").click();
+        $("h2").shouldHave(Condition.exactText("Личный кабинет")).shouldBe(visible);
+    }
+
+    @Test
+    @DisplayName("Should get error message if login with not registered user")
+    void shouldGetErrorNotRegisteredUser() {
+        var notRegisteredUser = getUser("active");
+        $("[data-test-id='login'] input").setValue(notRegisteredUser.getLogin());
+        $("[data-test-id='password'] input").setValue(notRegisteredUser.getPassword());
+        $("button.button").click();
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.matchText("Неверно указан логин или пароль"));
+    }
+
+    @Test
+    @DisplayName("Should get error message if login with blocked registered user")
+    void shouldGetErrorIfBlockedUser() {
+        var blockedUser = getRegisteredUser("blocked");
+        $("[data-test-id='login'] input").setValue(blockedUser.getLogin());
+        $("[data-test-id='password'] input").setValue(blockedUser.getPassword());
+        $("button.button").click();
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка! Пользователь заблокирован"));
+    }
+
+    @Test
+    @DisplayName("Should get error message if login with wrong login")
+    void shouldGetErrorIfWrongLogin() {
+        var registeredUser = getRegisteredUser("active");
+        var wrongLogin = getRandomLogin();
+        $("[data-test-id='login'] input").setValue(wrongLogin);
+        $("[data-test-id='password'] input").setValue(registeredUser.getPassword());
+        $("button.button").click();
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка! Неверно указан логин или пароль"));
+    }
+
+    @Test
+    @DisplayName("Should get error message if login with wrong password")
+    void shouldGetErrorIfWrongPassword() {
+        var registeredUser = getRegisteredUser("active");
+        var wrongPassword = getRandomPassword();
+        $("[data-test-id='login'] input").setValue(registeredUser.getLogin());
+        $("[data-test-id='password'] input").setValue(wrongPassword);
+        $("button.button").click();
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка! Неверно указан логин или пароль"));
     }
 }

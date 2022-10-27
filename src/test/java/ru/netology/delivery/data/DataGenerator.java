@@ -1,5 +1,10 @@
 package ru.netology.delivery.data;
+
 import com.github.javafaker.Faker;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.filter.log.LogDetail;
+import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
 import lombok.Value;
 
 import java.time.LocalDate;
@@ -7,64 +12,62 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Random;
 
+import static io.restassured.RestAssured.given;
+
 public class DataGenerator {
+    private static final RequestSpecification requestSpec = new RequestSpecBuilder()
+            .setBaseUri("http://localhost")
+            .setPort(9999)
+            .setAccept(ContentType.JSON)
+            .setContentType(ContentType.JSON)
+            .log(LogDetail.ALL)
+            .build();
+    private static final Faker faker = new Faker(new Locale("en"));
+
+
     private DataGenerator() {
     }
 
-    public static String generateDate(int shift) {
-        // TODO: добавить логику для объявления переменной date и задания её значения, для генерации строки с датой
-        // Вы можете использовать класс LocalDate и его методы для получения и форматирования даты
-        return LocalDate.now().plusDays(shift).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+    private static void sendRequest(RegistrationDto user) {
+        // сам запрос
+        given() // "дано"
+                .spec(requestSpec) // указываем, какую спецификацию используем
+                .body(user) // передаём в теле объект, который будет преобразован в JSON
+                .when() // "когда"
+                .post("/api/system/users") // на какой путь относительно BaseUri отправляем запрос
+                .then() // "тогда ожидаем"
+                .statusCode(200); // код 200 OK
     }
 
-    public static String generateCity() {
-        var cities = new String[]{"Майкоп", "Магас", "Йошкар-Ола", "Иваново", "Челябинск", "Майкоп", "Горно-Алтайск",
-                "Уфа", "Улан-Удэ", "Махачкала", "Нальчик", "Элиста", "Черкесск", "Петрозаводск", "Сыктывкар",
-                "Симферополь", "Саранск", "Якутск", "Владикавказ", "Казань", "Кызыл", "Ижевск", "Абакан", "Грозный",
-                "Чебоксары", "Барнаул", "Чита", "Петропавловск-Камчатский", "Краснодар", "Красноярск", "Пермь",
-                "Владивосток", "Ставрополь", "Хабаровск", "Благовещенск", "Архангельск", "Астрахань", "Белгород",
-                "Брянск", "Владимир", "Волгоград", "Вологда", "Воронеж", "Иркутск", "Калининград", "Краснодар",
-                "Красноярск", "Пермь", "Владивосток", "Ставрополь", "Хабаровск", "Благовещенск", "Архангельск",
-                "Астрахань", "Белгород", "Брянск", "Владимир", "Волгоград", "Вологда", "Воронеж", "Иркутск",
-                "Калининград", "Калуга", "Кемерово", "Киров", "Кострома", "Курган", "Курск", "Санкт-Петербург",
-                "Липецк", "Магадан", "Мурманск", "Нижний Новгород", "Великий Новгород", "Новосибирск", "Омск",
-                "Оренбург", "Орёл", "Пенза", "Псков", "Ростов-на-Дону", "Рязань", "Самара", "Саратов", "Южно-Сахалинск",
-                "Екатеринбург", "Смоленск", "Тамбов", "Тверь", "Томск", "Тула", "Тюмень", "Ульяновск", "Ярославль",
-                "Москва", "Севастополь", "Биробиджан", "Нарьян-Мар", "Ханты-Мансийск", "Анадырь", "Салехард"};
-        // TODO: добавить логику для объявления переменной city и задания её значения, генерацию можно выполнить
-        // с помощью Faker, либо используя массив валидных городов и класс Random
-        return cities[new Random().nextInt(cities.length)];
+    public static String getRandomLogin() {
+        return faker.name().username();
     }
 
-    public static String generateName(String locale) {
-        // TODO: добавить логику для объявления переменной name и задания её значения, для генерации можно
-        // использовать Faker
-        var faker = new Faker(new Locale(locale));
-        return faker.name().lastName() + " " + faker.name().firstName();
-    }
-
-    public static String generatePhone(String locale) {
-        // TODO: добавить логику для объявления переменной phone и задания её значения, для генерации можно
-        // использовать Faker
-        var faker = new Faker(new Locale(locale));
-        return faker.phoneNumber().phoneNumber();
+    public static String getRandomPassword() {
+        return faker.internet().password();
     }
 
     public static class Registration {
         private Registration() {
         }
 
-        public static UserInfo generateUser(String locale) {
-            // TODO: добавить логику для создания пользователя user с использованием методов generateCity(locale),
-            // generateName(locale), generatePhone(locale)
-            return new UserInfo(generateCity(), generateName(locale), generatePhone(locale));
+        public static RegistrationDto getUser(String status) {
+            var user = new RegistrationDto(getRandomLogin(), getRandomPassword(), status);
+            return user;
+        }
+
+        public static RegistrationDto getRegisteredUser(String status) {
+            var registeredUser = getUser(status);
+            sendRequest(registeredUser);
+            return registeredUser;
         }
     }
 
+
     @Value
-    public static class UserInfo {
-        String city;
-        String name;
-        String phone;
+    public static class RegistrationDto {
+        String login;
+        String password;
+        String status;
     }
 }
